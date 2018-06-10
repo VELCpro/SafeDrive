@@ -50,16 +50,23 @@
 
     <TextView
         android:id="@+id/qr1"
+        style="@android:style/Widget.TextView.PopupMenu"
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:layout_alignBottom="@+id/frameLayout"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="5dp"
+
+
         android:background="@drawable/box"
         android:clickable="false"
         android:cursorVisible="false"
         android:enabled="false"
         android:gravity="center_vertical"
-        android:text="Scansione il QRCode" />
+        android:text="Scansiona il QRCode"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="20dp"
+        android:typeface="sans" />
 
 </RelativeLayout>
