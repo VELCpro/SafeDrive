@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.MediaScannerConnection;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
@@ -29,10 +31,12 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static boolean FIRST_TIME_OPEN = true;
     // Variabili Camera
     Camera camera;
     FrameLayout frameLayout;
     ShowCamera showCamera;
+    CountDownTimer countDownTimer;
 
     // Variabili CameraSource per scan QR
     SurfaceView surfaceView;
@@ -219,7 +223,12 @@ public class MainActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if (camera == null) {
-            startCamera();
+            if(FIRST_TIME_OPEN){
+                FIRST_TIME_OPEN = false;
+                return;
+            }else
+                startCamera();
+
         }
     }
 
@@ -227,5 +236,40 @@ public class MainActivity extends AppCompatActivity {
         camera = Camera.open(CAMERA_FACING_FRONT); // Apro la camera normale
         showCamera = new ShowCamera(getApplicationContext(),camera);
         frameLayout.addView(showCamera);
+
+
+        int nPhoto = 5;
+
+        for(int i = 0; i < nPhoto ; i++){ // sto lavorando sul timer per le foto
+            startTimer();
+            //stoptimer();
+
+        }
+
+           // Toast.makeText(this,"Foto numero "+i+" scattata", Toast.LENGTH_LONG).show();
+
+
+    }
+
+    public void startTimer(){
+        countDownTimer =
+                new CountDownTimer(7000,1000){
+
+                    @Override
+                    public void onFinish() {
+                        camera.takePicture(null, null, mPictureCallback);
+                        System.out.println("Foto numero "+" scattata");
+                    }
+
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        System.out.println(millisUntilFinished/1000);
+                    }
+
+                }.start();
+    }
+
+    public void stoptimer(){
+        countDownTimer.cancel();
     }
 }
