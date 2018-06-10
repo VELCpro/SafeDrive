@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         frameLayout = (FrameLayout) findViewById(R.id.frameLayout);
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+        textView = (TextView) findViewById(R.id.textView);
 
 
         barcodeDetector = new BarcodeDetector.Builder(this)
@@ -105,7 +106,8 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println(qrCodes);
                     System.out.println(qrCodes.valueAt(0).displayValue);
 
-                    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
+              //    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
+                    if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) {
                         System.out.println(qrCodes.valueAt(0).displayValue);
                         cameraSource.takePicture(null,mPictureSourceCallback);
                     }
@@ -138,9 +140,10 @@ public class MainActivity extends AppCompatActivity {
                     MediaScannerConnection.scanFile(getApplicationContext(), new String[] { picture_file.getPath() }, new String[] { "image/jpeg" }, null);
 
                  // cameraSource.release(); // Chiudo la cameraSource
-                    surfaceView.setVisibility(View.GONE); // Cosi distruggo la Surface e di consegienza po invoco camera.release()
-                                                          // non so se è meglio fare prima una cosa o l'altra.
-                   startCamera();
+                    surfaceView.setVisibility(View.GONE); // Cosi distruggo la Surface e di consegienza po invoco camera.release() // non so se è meglio fare prima una cosa o l'altra.
+                    textView.setVisibility(View.GONE);
+
+                    startCamera();
                   //camera.startPreview();
 
                 } catch (FileNotFoundException e) {
@@ -240,11 +243,11 @@ public class MainActivity extends AppCompatActivity {
 
         int nPhoto = 5;
 
-        for(int i = 0; i < nPhoto ; i++){ // sto lavorando sul timer per le foto
+       // for(int i = 0; i < nPhoto ; i++){ // sto lavorando sul timer per le foto
             startTimer();
             //stoptimer();
 
-        }
+       // }
 
            // Toast.makeText(this,"Foto numero "+i+" scattata", Toast.LENGTH_LONG).show();
 
@@ -252,18 +255,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startTimer(){
+
+        final int numeroFotoDaScattare = 4;
+        final int countDownInterval = 3000;
+        final int millisInFuture = (numeroFotoDaScattare+1) * countDownInterval;
+
         countDownTimer =
-                new CountDownTimer(7000,1000){
+                new CountDownTimer(millisInFuture,countDownInterval){
 
                     @Override
                     public void onFinish() {
-                        camera.takePicture(null, null, mPictureCallback);
-                        System.out.println("Foto numero "+" scattata");
+                        System.out.println(numeroFotoDaScattare +" foto  sono state scattate correttamente");
+                        Toast.makeText(MainActivity.this, numeroFotoDaScattare +" foto  sono state scattate correttamente", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onTick(long millisUntilFinished) {
-                        System.out.println(millisUntilFinished/1000);
+                        System.out.println(millisUntilFinished);
+                        camera.takePicture(null, null, mPictureCallback);
+                        int i = ((millisInFuture-(int)millisUntilFinished)/(countDownInterval))+1;
+                        System.out.println("Foto numero n° " + i +" scattata ");
+                        Toast.makeText(MainActivity.this, "Foto numero n° " + i +" scattata ", Toast.LENGTH_SHORT).show();
                     }
 
                 }.start();

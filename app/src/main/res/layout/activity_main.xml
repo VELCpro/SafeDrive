@@ -25,7 +25,7 @@
         android:clickable="false" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="47dp"
         android:background="@android:color/holo_blue_dark"
@@ -46,10 +46,10 @@
         android:layout_alignParentStart="true"
         android:onClick="captureImage"
         android:text="Button"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
     <TextView
-        android:id="@+id/qr1"
+        android:id="@+id/textView"
         style="@android:style/Widget.TextView.PopupMenu"
         android:layout_width="150dp"
         android:layout_height="150dp"
