@@ -133,12 +133,10 @@ public class MainActivity extends AppCompatActivity {
                     fos.close();
                     MediaScannerConnection.scanFile(getApplicationContext(), new String[] { picture_file.getPath() }, new String[] { "image/jpeg" }, null);
 
-                 //   cameraSource.release(); // Chiudo la cameraSource
+                 // cameraSource.release(); // Chiudo la cameraSource
                     surfaceView.setVisibility(View.GONE); // Cosi distruggo la Surface e di consegienza po invoco camera.release()
                                                           // non so se è meglio fare prima una cosa o l'altra.
-                    camera = Camera.open(CAMERA_FACING_FRONT); // Apro la camera normale
-                    showCamera = new ShowCamera(getApplicationContext(),camera);
-                    frameLayout.addView(showCamera);
+                   startCamera();
                   //camera.startPreview();
 
                 } catch (FileNotFoundException e) {
@@ -202,5 +200,32 @@ public class MainActivity extends AppCompatActivity {
         if(camera != null){
             camera.takePicture(null,null,mPictureCallback);
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (camera != null){
+            //              mCamera.setPreviewCallback(null);
+            showCamera.getHolder().removeCallback(showCamera);
+            camera.release();        // release the camera for other applications
+            camera = null;
+
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (camera == null) {
+            startCamera();
+        }
+    }
+
+    public void startCamera(){
+        camera = Camera.open(CAMERA_FACING_FRONT); // Apro la camera normale
+        showCamera = new ShowCamera(getApplicationContext(),camera);
+        frameLayout.addView(showCamera);
     }
 }
