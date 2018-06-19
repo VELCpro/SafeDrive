@@ -2,10 +2,13 @@ package com.example.fabio.safedrive;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -283,5 +286,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void stoptimer(){
         countDownTimer.cancel();
-    }//piciu
+    }
+
+    public void GetImageFfromGalleries(Uri path){
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
