@@ -70,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
     public static final int[] HD_720p = {1280, 720};
 
     //Per upload immagine
-    private EditText NAME;
     private String uploadUrl = "http://safedrive.altervista.org/updateinfo.php"; // indirizzo web di update info
     private Bitmap bitmap;
     Button buttonUploadTest;
