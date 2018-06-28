@@ -1,10 +1,15 @@
 package com.example.fabio.safedrive;
 
+import android.app.Application;
 import android.content.Context;
+import android.text.format.Time;
+import android.widget.Toast;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 
 import java.util.ArrayList;
+import java.util.Timer;
 
 public class MyCommand<T> {
 
@@ -25,8 +30,20 @@ public class MyCommand<T> {
     }
 
     public void execute(){
+        int i = 0;
+
         for(Request<T> request : requestList){
+            // bisogna toglere il limite di timeout della connessione e successivo riprova ad uplodare il file
+            request.setRetryPolicy(new DefaultRetryPolicy(
+                    0,
+                    DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                    DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+
+            ));
             MySingleton.getInstance(context).addToRequestQueue(request);
+            Toast.makeText(this.context,"foto"+i,Toast.LENGTH_SHORT).show();
+            System.out.println("foto"+i);
+            i++;
 
         }
     }

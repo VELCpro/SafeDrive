@@ -231,9 +231,9 @@ public class MainActivity extends AppCompatActivity {
 
     private File getOutputMediaFile() {
      // Creo un nome unico per ogni foto associandogli un TimeStamp
-        String formato = "jpg";
+        String formato = ".jpg";
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + ".";
+        String imageFileName = "JPEG_" + timeStamp;
         String state = Environment.getExternalStorageState();
         if(!state.equals(Environment.MEDIA_MOUNTED)){
             return null;
@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
 
             File outputFile = new File(folder_gui,imageFileName + formato);
             imageList.add(outputFile.getPath());
-            imageMap.put(outputFile.getPath(), imageFileName +formato);
+            imageMap.put(outputFile.getPath(), imageFileName);
             return outputFile;
         }
     }
@@ -488,7 +488,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
         myCommand.execute();
-        Toast.makeText(MainActivity.this," Upload riuscito",Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this," Upload iniziato",Toast.LENGTH_SHORT).show();
 
     }
 
