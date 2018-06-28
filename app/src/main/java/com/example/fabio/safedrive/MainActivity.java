@@ -41,10 +41,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Time;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -72,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
     //Per upload immagine
     private String uploadUrl = "http://safedrive.altervista.org/updateinfo.php"; // indirizzo web di updateinfo
     private Bitmap bitmap;
+    private ArrayList<String> imageList = new ArrayList<>();
+    private HashMap<String,String> imageMap = new HashMap<>();
     Button buttonUploadTest;
 
     @Override
@@ -83,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         textView = (TextView) findViewById(R.id.textView);
 
-        // try the button Upload
+        /** try the button Upload
         buttonUploadTest = (Button) findViewById(R.id.buttonUploadTest);
 
 
@@ -92,10 +98,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                getImageFromGalleries(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "snap1.jpg")));
-                uploadImage();
+                bitmap = getImageFromGalleries(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "snap1.jpg")));
+                uploadImage(bitmap);
             }
-        });
+        });**/
 
 
 
@@ -148,6 +154,8 @@ public class MainActivity extends AppCompatActivity {
                     if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) {
                         System.out.println(qrCodes.valueAt(0).displayValue);
                         cameraSource.takePicture(null,mPictureSourceCallback);
+                     //   startTimerCameraSource();
+                    //    uploadImages(imageList);
                     }
                 }
             }
@@ -180,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
                  // cameraSource.release(); // Chiudo la cameraSource
                     surfaceView.setVisibility(View.GONE); // Cosi distruggo la Surface e di consegienza po invoco camera.release() // non so se è meglio fare prima una cosa o l'altra.
                     textView.setVisibility(View.GONE);
+
 
                     startCamera();
                   //camera.startPreview();
@@ -237,6 +246,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             File outputFile = new File(folder_gui,imageFileName + formato);
+            imageList.add(outputFile.getPath());
+            imageMap.put(outputFile.getPath(), imageFileName +formato);
             return outputFile;
         }
     }
@@ -283,6 +294,7 @@ public class MainActivity extends AppCompatActivity {
 
        // for(int i = 0; i < nPhoto ; i++){ // sto lavorando sul timer per le foto
             startTimer();
+
             //stoptimer();
 
        // }
@@ -293,6 +305,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startTimer(){
+
+        final int numeroFotoDaScattare = 2;
+        final int countDownInterval = 3000;
+        final int millisInFuture = (numeroFotoDaScattare+1) * countDownInterval;
+
+        countDownTimer =
+                new CountDownTimer(millisInFuture,countDownInterval){
+
+                    @Override
+                    public void onFinish() {
+                        System.out.println(numeroFotoDaScattare +" foto  sono state scattate correttamente");
+                        Toast.makeText(MainActivity.this, numeroFotoDaScattare +" foto  sono state scattate correttamente", Toast.LENGTH_SHORT).show();
+                        uploadImages(imageMap);
+                    }
+
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        System.out.println(millisUntilFinished);
+                        camera.takePicture(null, null, mPictureCallback);
+                        int i = ((millisInFuture-(int)millisUntilFinished)/(countDownInterval))+1;
+                        System.out.println("Foto numero n° " + i +" scattata ");
+                        Toast.makeText(MainActivity.this, "Foto numero n° " + i +" scattata ", Toast.LENGTH_SHORT).show();
+                    }
+
+                }.start();
+    }
+
+    public void startTimerCameraSource(){
 
         final int numeroFotoDaScattare = 4;
         final int countDownInterval = 3000;
@@ -310,7 +350,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         System.out.println(millisUntilFinished);
-                        camera.takePicture(null, null, mPictureCallback);
+                        cameraSource.takePicture(null,mPictureSourceCallback);
                         int i = ((millisInFuture-(int)millisUntilFinished)/(countDownInterval))+1;
                         System.out.println("Foto numero n° " + i +" scattata ");
                         Toast.makeText(MainActivity.this, "Foto numero n° " + i +" scattata ", Toast.LENGTH_SHORT).show();
@@ -323,15 +363,16 @@ public class MainActivity extends AppCompatActivity {
         countDownTimer.cancel();
     }
 
-    public void getImageFromGalleries(Uri path){
+    public Bitmap getImageFromGalleries(Uri path){
         try {
-            bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),path);
+            return MediaStore.Images.Media.getBitmap(getContentResolver(),path);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
-    private void uploadImage(){
+    private void uploadImageOLd(final Bitmap bitmap){
         StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
                 new Response.Listener<String>() {
                     @Override
@@ -360,12 +401,101 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        MySingleton.getmInstance(MainActivity.this).addToRequestQue(stringRequest);
+        MySingleton.getInstance(MainActivity.this).addToRequestQueue(stringRequest);
     }
+
+    private void uploadImages(final ArrayList<String> imageList){
+        final MyCommand myCommand = new MyCommand(getApplicationContext());
+
+        for(final String imagePath : imageList){
+            final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                String Response = jsonObject.getString("response");
+                                Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+
+                }
+            })
+            {
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+
+                    Map<String,String> params = new HashMap<String,String>();
+                    params.put("name","foto" ); //aggiungere poi nome dinamico
+
+                    params.put("image",imageToString(getImageFromGalleries(Uri.fromFile(new File(imagePath)))));
+                    return params;
+                }
+            };
+
+            myCommand.add(stringRequest);
+            Toast.makeText(MainActivity.this,imagePath +" Aggiunta",Toast.LENGTH_SHORT).show();
+
+
+        }
+        myCommand.execute();
+        Toast.makeText(MainActivity.this," Upload riuscito",Toast.LENGTH_SHORT).show();
+
+    }
+
+    private void uploadImages(final HashMap<String,String> imageMap){
+        final MyCommand myCommand = new MyCommand(getApplicationContext());
+
+        for(final String imagePath : imageMap.keySet()){
+            final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                String Response = jsonObject.getString("response");
+                                Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+
+                }
+            })
+            {
+                @Override
+                protected Map<String, String> getParams() throws AuthFailureError {
+
+                    Map<String,String> params = new HashMap<String,String>();
+                    params.put("name",imageMap.get(imagePath)); //aggiungere poi nome dinamico
+
+                    params.put("image",imageToString(getImageFromGalleries(Uri.fromFile(new File(imagePath)))));
+                    return params;
+                }
+            };
+
+            myCommand.add(stringRequest);
+            Toast.makeText(MainActivity.this,imagePath +" Aggiunta",Toast.LENGTH_SHORT).show();
+            //MySingleton.getmInstance(MainActivity.this).addToRequestQue(stringRequest);
+
+        }
+        myCommand.execute();
+        Toast.makeText(MainActivity.this," Upload riuscito",Toast.LENGTH_SHORT).show();
+
+    }
+
 
     private String imageToString(Bitmap bitmap){
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG,100,byteArrayOutputStream); // forse posso evitarlo dato che ho gia il JPEG
+        bitmap.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream); // forse posso evitarlo dato che ho gia il JPEG
         byte[] imgBytes = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(imgBytes,Base64.DEFAULT);
     }
