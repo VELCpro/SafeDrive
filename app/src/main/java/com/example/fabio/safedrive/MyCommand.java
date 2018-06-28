@@ -2,7 +2,6 @@ package com.example.fabio.safedrive;
 
 import android.app.Application;
 import android.content.Context;
-import android.text.format.Time;
 import android.widget.Toast;
 
 import com.android.volley.DefaultRetryPolicy;
