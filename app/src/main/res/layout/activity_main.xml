@@ -68,4 +68,15 @@
         android:textSize="20dp"
         android:typeface="sans" />
 
+    <TextView
+        android:id="@+id/status_message_text_view_id"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="Status: STATUS_MSG"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
 </RelativeLayout>
