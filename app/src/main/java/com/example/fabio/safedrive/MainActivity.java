@@ -121,7 +121,23 @@ public class MainActivity extends AppCompatActivity {
     Button buttonUploadTest;
 
     //Per BACTrack
+    private static final int NO_RESULT = 10000;
+    private float BAC_RESULT = NO_RESULT;
+    private boolean UPLOAD_FINISH = false;
     public static final String apiKey = "f2c64398fb774a5eb2e4adcfe9309f";
+
+    private static final byte PERMISSIONS_FOR_SCAN = 100;
+
+    private static String TAG = "MainActivity";
+
+    private TextView statusMessageTextView;
+    private TextView batteryLevelTextView;
+
+    private BACtrackAPI mAPI;
+    private String currentFirmware;
+    private Button serialNumberButton;
+    private Button useCountButton;
+    private Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,6 +148,9 @@ public class MainActivity extends AppCompatActivity {
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         this.statusMessageTextView = (TextView)this.findViewById(R.id.status_message_text_view_id);
         textView = (TextView) findViewById(R.id.textView);
+
+        createBACTrackProcess();
+        connectNearest();
 
 
         /** try the button Upload
@@ -335,6 +354,15 @@ public class MainActivity extends AppCompatActivity {
         frameLayout.addView(showCamera);
         startTimer();
 
+
+       //mAPI.bacTrackAPICallbacks.BACtrackCountdown(2);
+
+        startBlowProcess();
+        //faccio in modo che i due processi si aspettino
+      /**  while(BAC_RESULT == NO_RESULT || UPLOAD_FINISH == false){
+            System.out.println("Aspetto un risultato");
+        }**/
+
     }
 
     public void startTimer(){
@@ -351,6 +379,7 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println(numeroFotoDaScattare +" foto  sono state scattate correttamente");
                         Toast.makeText(MainActivity.this, numeroFotoDaScattare +" foto  sono state scattate correttamente", Toast.LENGTH_SHORT).show();
                         uploadImages(imageMap);
+                        UPLOAD_FINISH = true;
                     }
 
                     @Override
@@ -476,18 +505,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        private static final byte PERMISSIONS_FOR_SCAN = 100;
 
-        private static String TAG = "MainActivity";
-
-        private TextView statusMessageTextView;
-        private TextView batteryLevelTextView;
-
-        private BACtrackAPI mAPI;
-        private String currentFirmware;
-        private Button serialNumberButton;
-        private Button useCountButton;
-        private Context mContext;
 
     /**   @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -501,7 +519,7 @@ public class MainActivity extends AppCompatActivity {
 
         }**/
 
-        public void createBACTrack(){
+        public void createBACTrackProcess(){
             try {
                 mAPI = new BACtrackAPI(this, mCallbacks, apiKey);
                 mContext = this;
@@ -534,7 +552,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        public void connectNearestClicked(View v) {
+        public void connectNearest() {
             if (mAPI != null) {
                 setStatus(R.string.TEXT_CONNECTING);
                 // Here, thisActivity is the current activity
@@ -603,7 +621,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // prendi
-        public void startBlowProcessClicked(View v) {
+        public void startBlowProcess() {
             boolean result = false;
             if (mAPI != null) {
                 result = mAPI.startCountdown();
@@ -726,6 +744,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void BACtrackResults(float measuredBac) {
                 setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
+                //qua salvare il risultato dell'analisi del BAC
+                BAC_RESULT = measuredBac;
             }
 
             @Override
