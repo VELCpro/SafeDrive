@@ -121,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
     Button buttonUploadTest;
 
     //Per BACTrack
+    private String QR_CODE_CONTENT;
     private static final int NO_RESULT = 10000;
     private float BAC_RESULT = NO_RESULT;
     private boolean UPLOAD_FINISH = false;
@@ -213,10 +214,9 @@ public class MainActivity extends AppCompatActivity {
                 if(qrCodes.size() != 0){
                     System.out.println(qrCodes);
                     System.out.println(qrCodes.valueAt(0).displayValue);
-
+                    QR_CODE_CONTENT = qrCodes.valueAt(0).displayValue;
               //    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
-                    if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) {
-                        System.out.println(qrCodes.valueAt(0).displayValue);
+                    if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) { // cancellare poi l' IF
                         cameraSource.takePicture(null,mPictureSourceCallback);
                      //   startTimerCameraSource();
                     //    uploadImages(imageList);
@@ -379,7 +379,6 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println(numeroFotoDaScattare +" foto  sono state scattate correttamente");
                         Toast.makeText(MainActivity.this, numeroFotoDaScattare +" foto  sono state scattate correttamente", Toast.LENGTH_SHORT).show();
                         uploadImages(imageMap);
-                        UPLOAD_FINISH = true;
                     }
 
                     @Override
@@ -446,6 +445,12 @@ public class MainActivity extends AppCompatActivity {
                                 JSONObject jsonObject = new JSONObject(response);
                                 String Response = jsonObject.getString("response");
                                 Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+
+                                UPLOAD_FINISH = true; // dico che è finito l'upload perchè ho ricevuto una risposta
+
+                                if(BAC_RESULT != NO_RESULT){
+                                    uploadDati();
+                                }
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -519,280 +524,284 @@ public class MainActivity extends AppCompatActivity {
 
         }**/
 
-        public void createBACTrackProcess(){
-            try {
-                mAPI = new BACtrackAPI(this, mCallbacks, apiKey);
-                mContext = this;
-            } catch (BluetoothLENotSupportedException e) {
-                e.printStackTrace();
-                this.setStatus(R.string.TEXT_ERR_BLE_NOT_SUPPORTED);
-            } catch (BluetoothNotEnabledException e) {
-                e.printStackTrace();
-                this.setStatus(R.string.TEXT_ERR_BT_NOT_ENABLED);
-            } catch (LocationServicesNotEnabledException e) {
-                e.printStackTrace();
-                this.setStatus(R.string.TEXT_ERR_LOCATIONS_NOT_ENABLED);
-            }
-        }
 
-        @Override
-        public void onRequestPermissionsResult(int requestCode,
-                                               String permissions[], int[] grantResults) {
-            switch (requestCode) {
-                case PERMISSIONS_FOR_SCAN: {
-                    // If request is cancelled, the result arrays are empty.
-                    if (grantResults.length > 0
-                            && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                        /**
-                         * Only start scan if permissions granted.
-                         */
-                        mAPI.connectToNearestBreathalyzer();
-                    }
-                }
-            }
+    public void createBACTrackProcess(){
+        try {
+            mAPI = new BACtrackAPI(this, mCallbacks, apiKey);
+            mContext = this;
+        } catch (BluetoothLENotSupportedException e) {
+            e.printStackTrace();
+            this.setStatus(R.string.TEXT_ERR_BLE_NOT_SUPPORTED);
+        } catch (BluetoothNotEnabledException e) {
+            e.printStackTrace();
+            this.setStatus(R.string.TEXT_ERR_BT_NOT_ENABLED);
+        } catch (LocationServicesNotEnabledException e) {
+            e.printStackTrace();
+            this.setStatus(R.string.TEXT_ERR_LOCATIONS_NOT_ENABLED);
         }
+    }
 
-        public void connectNearest() {
-            if (mAPI != null) {
-                setStatus(R.string.TEXT_CONNECTING);
-                // Here, thisActivity is the current activity
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSIONS_FOR_SCAN);
-                } else {
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSIONS_FOR_SCAN: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     /**
-                     * Permission already granted, start scan.
+                     * Only start scan if permissions granted.
                      */
                     mAPI.connectToNearestBreathalyzer();
                 }
             }
         }
+    }
 
-        public void disconnectClicked(View v) {
-            if (mAPI != null) {
-                mAPI.disconnect();
+    public void connectNearest() {
+        if (mAPI != null) {
+            setStatus(R.string.TEXT_CONNECTING);
+            // Here, thisActivity is the current activity
+            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSIONS_FOR_SCAN);
+            } else {
+                /**
+                 * Permission already granted, start scan.
+                 */
+                mAPI.connectToNearestBreathalyzer();
+            }
+        }
+    }
+
+    public void disconnectClicked(View v) {
+        if (mAPI != null) {
+            mAPI.disconnect();
+        }
+    }
+
+    public void getFirmwareVersionClicked(View v) {
+        boolean result = false;
+        if (mAPI != null) {
+            result = mAPI.getFirmwareVersion();
+        }
+        if (!result)
+            Log.e(TAG, "mAPI.getFirmwareVersion() failed");
+        else
+            Log.d(TAG, "Firmware version requested");
+    }
+
+    public void getSerialNumberClicked(View view) {
+        boolean result = false;
+        if (mAPI != null) {
+            result = mAPI.getSerialNumber();
+        }
+        if (!result)
+            Log.e(TAG, "mAPI.getSerialNumber() failed");
+        else
+            Log.d(TAG, "Serial Number requested");
+    }
+
+    public void requestUseCountClicked(View view) {
+        boolean result = false;
+        if (mAPI != null) {
+            result = mAPI.getUseCount();
+        }
+        if (!result)
+            Log.e(TAG, "mAPI.requestUseCount() failed");
+        else
+            Log.d(TAG, "Use count requested");
+    }
+
+    public void requestBatteryVoltageClicked(View view) {
+        boolean result = false;
+        if (mAPI != null) {
+            result = mAPI.getBreathalyzerBatteryVoltage();
+        }
+        if (!result)
+            Log.e(TAG, "mAPI.getBreathalyzerBatteryVoltage() failed");
+        else
+            Log.d(TAG, "Battery voltage requested");
+    }
+
+    // prendi
+    public void startBlowProcess() {
+        boolean result = false;
+        if (mAPI != null) {
+            result = mAPI.startCountdown();
+        }
+        if (!result)
+            Log.e(TAG, "mAPI.startCountdown() failed");
+        else
+            Log.d(TAG, "Blow process start requested");
+    }
+
+    private void setStatus(int resourceId) {
+        this.setStatus(this.getResources().getString(resourceId));
+    }
+
+    private void setStatus(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, message);
+                statusMessageTextView.setText(String.format("Status:\n%s", message));
+            }
+        });
+    }
+
+    private void setBatteryStatus(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, message);
+                batteryLevelTextView.setText(String.format("\n%s", message));
+            }
+        });
+    }
+
+    private class APIKeyVerificationAlert extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... urls) {
+            return urls[0];
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            AlertDialog.Builder apiApprovalAlert = new AlertDialog.Builder(mContext);
+            apiApprovalAlert.setTitle("API Approval Failed");
+            apiApprovalAlert.setMessage(result);
+            apiApprovalAlert.setPositiveButton(
+                    "Ok",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            mAPI.disconnect();
+                            setStatus(R.string.TEXT_DISCONNECTED);
+                            dialog.cancel();
+                        }
+                    });
+
+            apiApprovalAlert.create();
+            apiApprovalAlert.show();
+        }
+    }
+
+    private final BACtrackAPICallbacks mCallbacks = new BACtrackAPICallbacks() {
+
+        @Override
+        public void BACtrackAPIKeyDeclined(String errorMessage) {
+            APIKeyVerificationAlert verify = new APIKeyVerificationAlert();
+            verify.execute(errorMessage);
+        }
+
+        @Override
+        public void BACtrackAPIKeyAuthorized() {
+
+        }
+
+        @Override
+        public void BACtrackConnected(BACTrackDeviceType bacTrackDeviceType) {
+            setStatus(R.string.TEXT_CONNECTED);
+        }
+
+        @Override
+        public void BACtrackDidConnect(String s) {
+            setStatus(R.string.TEXT_DISCOVERING_SERVICES);
+        }
+
+        @Override
+        public void BACtrackDisconnected() {
+            setStatus(R.string.TEXT_DISCONNECTED);
+            setBatteryStatus("");
+            setCurrentFirmware(null);
+        }
+        @Override
+        public void BACtrackConnectionTimeout() {
+
+        }
+
+        @Override
+        public void BACtrackFoundBreathalyzer(BACtrackAPI.b BACtrackDevice) {
+            Log.d(TAG, "Found breathalyzer : " + BACtrackDevice.toString());
+        }
+
+        @Override
+        public void BACtrackCountdown(int currentCountdownCount) {
+            setStatus(getString(R.string.TEXT_COUNTDOWN) + " " + currentCountdownCount);
+        }
+
+        @Override
+        public void BACtrackStart() {
+            setStatus(R.string.TEXT_BLOW_NOW);
+        }
+
+        @Override
+        public void BACtrackBlow() {
+            setStatus(R.string.TEXT_KEEP_BLOWING);
+        }
+
+        @Override
+        public void BACtrackAnalyzing() {
+            setStatus(R.string.TEXT_ANALYZING);
+        }
+
+        @Override
+        public void BACtrackResults(float measuredBac) {
+            setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
+            //qua salvare il risultato dell'analisi del BAC
+            BAC_RESULT = measuredBac;
+            if(UPLOAD_FINISH == true){
+                uploadDati();
             }
         }
 
-        public void getFirmwareVersionClicked(View v) {
-            boolean result = false;
-            if (mAPI != null) {
-                result = mAPI.getFirmwareVersion();
+        @Override
+        public void BACtrackFirmwareVersion(String version) {
+            setCurrentFirmware(version);
+            setStatus(getString(R.string.TEXT_FIRMWARE_VERSION) + " " + version);
+        }
+
+        @Override
+        public void BACtrackSerial(String serialHex) {
+            setStatus(getString(R.string.TEXT_SERIAL_NUMBER) + " " + serialHex);
+        }
+
+        @Override
+        public void BACtrackUseCount(int useCount) {
+            Log.d(TAG, "UseCount: " + useCount);
+            // C6/C8 bug in hardware does not allow getting use count
+            if (useCount == 4096)
+            {
+                setStatus("Cannot retrieve use count for C6/C8 devices");
             }
-            if (!result)
-                Log.e(TAG, "mAPI.getFirmwareVersion() failed");
             else
-                Log.d(TAG, "Firmware version requested");
-        }
-
-        public void getSerialNumberClicked(View view) {
-            boolean result = false;
-            if (mAPI != null) {
-                result = mAPI.getSerialNumber();
-            }
-            if (!result)
-                Log.e(TAG, "mAPI.getSerialNumber() failed");
-            else
-                Log.d(TAG, "Serial Number requested");
-        }
-
-        public void requestUseCountClicked(View view) {
-            boolean result = false;
-            if (mAPI != null) {
-                result = mAPI.getUseCount();
-            }
-            if (!result)
-                Log.e(TAG, "mAPI.requestUseCount() failed");
-            else
-                Log.d(TAG, "Use count requested");
-        }
-
-        public void requestBatteryVoltageClicked(View view) {
-            boolean result = false;
-            if (mAPI != null) {
-                result = mAPI.getBreathalyzerBatteryVoltage();
-            }
-            if (!result)
-                Log.e(TAG, "mAPI.getBreathalyzerBatteryVoltage() failed");
-            else
-                Log.d(TAG, "Battery voltage requested");
-        }
-
-        // prendi
-        public void startBlowProcess() {
-            boolean result = false;
-            if (mAPI != null) {
-                result = mAPI.startCountdown();
-            }
-            if (!result)
-                Log.e(TAG, "mAPI.startCountdown() failed");
-            else
-                Log.d(TAG, "Blow process start requested");
-        }
-
-        private void setStatus(int resourceId) {
-            this.setStatus(this.getResources().getString(resourceId));
-        }
-
-        private void setStatus(final String message) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, message);
-                    statusMessageTextView.setText(String.format("Status:\n%s", message));
-                }
-            });
-        }
-
-        private void setBatteryStatus(final String message) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, message);
-                    batteryLevelTextView.setText(String.format("\n%s", message));
-                }
-            });
-        }
-
-        private class APIKeyVerificationAlert extends AsyncTask<String, Void, String> {
-            @Override
-            protected String doInBackground(String... urls) {
-                return urls[0];
-            }
-
-            @Override
-            protected void onPostExecute(String result) {
-                AlertDialog.Builder apiApprovalAlert = new AlertDialog.Builder(mContext);
-                apiApprovalAlert.setTitle("API Approval Failed");
-                apiApprovalAlert.setMessage(result);
-                apiApprovalAlert.setPositiveButton(
-                        "Ok",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                mAPI.disconnect();
-                                setStatus(R.string.TEXT_DISCONNECTED);
-                                dialog.cancel();
-                            }
-                        });
-
-                apiApprovalAlert.create();
-                apiApprovalAlert.show();
+            {
+                setStatus(getString(R.string.TEXT_USE_COUNT) + " " + useCount);
             }
         }
 
-        private final BACtrackAPICallbacks mCallbacks = new BACtrackAPICallbacks() {
+        @Override
+        public void BACtrackBatteryVoltage(float voltage) {
 
-            @Override
-            public void BACtrackAPIKeyDeclined(String errorMessage) {
-                APIKeyVerificationAlert verify = new APIKeyVerificationAlert();
-                verify.execute(errorMessage);
-            }
+        }
 
-            @Override
-            public void BACtrackAPIKeyAuthorized() {
+        @Override
+        public void BACtrackBatteryLevel(int level) {
+            setBatteryStatus(getString(R.string.TEXT_BATTERY_LEVEL) + " " + level);
 
-            }
+        }
 
-            @Override
-            public void BACtrackConnected(BACTrackDeviceType bacTrackDeviceType) {
-                setStatus(R.string.TEXT_CONNECTED);
-            }
-
-            @Override
-            public void BACtrackDidConnect(String s) {
-                setStatus(R.string.TEXT_DISCOVERING_SERVICES);
-            }
-
-            @Override
-            public void BACtrackDisconnected() {
-                setStatus(R.string.TEXT_DISCONNECTED);
-                setBatteryStatus("");
-                setCurrentFirmware(null);
-            }
-            @Override
-            public void BACtrackConnectionTimeout() {
-
-            }
-
-            @Override
-            public void BACtrackFoundBreathalyzer(BACtrackAPI.b BACtrackDevice) {
-                Log.d(TAG, "Found breathalyzer : " + BACtrackDevice.toString());
-            }
-
-            @Override
-            public void BACtrackCountdown(int currentCountdownCount) {
-                setStatus(getString(R.string.TEXT_COUNTDOWN) + " " + currentCountdownCount);
-            }
-
-            @Override
-            public void BACtrackStart() {
-                setStatus(R.string.TEXT_BLOW_NOW);
-            }
-
-            @Override
-            public void BACtrackBlow() {
-                setStatus(R.string.TEXT_KEEP_BLOWING);
-            }
-
-            @Override
-            public void BACtrackAnalyzing() {
-                setStatus(R.string.TEXT_ANALYZING);
-            }
-
-            @Override
-            public void BACtrackResults(float measuredBac) {
-                setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
-                //qua salvare il risultato dell'analisi del BAC
-                BAC_RESULT = measuredBac;
-            }
-
-            @Override
-            public void BACtrackFirmwareVersion(String version) {
-                setCurrentFirmware(version);
-                setStatus(getString(R.string.TEXT_FIRMWARE_VERSION) + " " + version);
-            }
-
-            @Override
-            public void BACtrackSerial(String serialHex) {
-                setStatus(getString(R.string.TEXT_SERIAL_NUMBER) + " " + serialHex);
-            }
-
-            @Override
-            public void BACtrackUseCount(int useCount) {
-                Log.d(TAG, "UseCount: " + useCount);
-                // C6/C8 bug in hardware does not allow getting use count
-                if (useCount == 4096)
-                {
-                    setStatus("Cannot retrieve use count for C6/C8 devices");
-                }
-                else
-                {
-                    setStatus(getString(R.string.TEXT_USE_COUNT) + " " + useCount);
-                }
-            }
-
-            @Override
-            public void BACtrackBatteryVoltage(float voltage) {
-
-            }
-
-            @Override
-            public void BACtrackBatteryLevel(int level) {
-                setBatteryStatus(getString(R.string.TEXT_BATTERY_LEVEL) + " " + level);
-
-            }
-
-            @Override
-            public void BACtrackError(int errorCode) {
-                if (errorCode == Errors.ERROR_BLOW_ERROR)
-                    setStatus(R.string.TEXT_ERR_BLOW_ERROR);
-            }
-        };
+        @Override
+        public void BACtrackError(int errorCode) {
+            if (errorCode == Errors.ERROR_BLOW_ERROR)
+                setStatus(R.string.TEXT_ERR_BLOW_ERROR);
+        }
+    };
 
 
-        public void setCurrentFirmware(@Nullable String currentFirmware) {
+    public void setCurrentFirmware(@Nullable String currentFirmware) {
             this.currentFirmware = currentFirmware;
 
             String[] firmwareSplit = new String[0];
@@ -841,5 +850,47 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+    public void uploadDati(){
+        final MyCommand myCommand = new MyCommand(getApplicationContext());
 
+        final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            String Response = jsonObject.getString("response");
+                            Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        })
+        {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                String formato = ".jpg"; // vedere se serve o no
+                Map<String,String> params = new HashMap<String,String>();
+                params.put("QRCode",QR_CODE_CONTENT);
+                params.put("foto1",imageMap.get(0) + formato);
+                params.put("foto2",imageMap.get(1) + formato);
+                params.put("foto3",imageMap.get(2) + formato);
+                params.put("BACResult",Float.toString(BAC_RESULT));
+
+                return params;
+            }
+        };
+
+        myCommand.add(stringRequest);
+        //MySingleton.getmInstance(MainActivity.this).addToRequestQue(stringRequest);
+
+        myCommand.execute();
+        Toast.makeText(MainActivity.this,"Upload dati per confronto",Toast.LENGTH_SHORT).show();
+    }
 }
