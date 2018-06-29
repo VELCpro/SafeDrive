@@ -1,7 +1,6 @@
 package com.example.fabio.safedrive;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,7 +25,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,36 +47,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
-import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.bluetooth.BluetoothDevice;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Map;
 
 import BACtrackAPI.API.BACtrackAPI;
@@ -115,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
     //Per upload immagine
     private String uploadUrl = "http://safedrive.altervista.org/updateinfo.php"; // indirizzo web di updateinfo
-    private String uploadUrlForResult = "http://safedrive.altervista.org/"; // indirizzo web di updateinfo
+    private String uploadUrlForResult = "http://safedrive.altervista.org/Pagina.php"; // indirizzo web di updateinfo
     private Bitmap bitmap;
     private ArrayList<String> imageList = new ArrayList<>();
     private HashMap<String,String> imageMap = new HashMap<>();
@@ -126,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int NO_RESULT = 10000;
     private float BAC_RESULT = NO_RESULT;
     private boolean UPLOAD_FINISH = false;
+    private boolean FLAG_START_LAST_UPLOAD = false;
     public static final String apiKey = "f2c64398fb774a5eb2e4adcfe9309f";
 
     private static final byte PERMISSIONS_FOR_SCAN = 100;
@@ -449,7 +422,8 @@ public class MainActivity extends AppCompatActivity {
 
                                 UPLOAD_FINISH = true; // dico che è finito l'upload perchè ho ricevuto una risposta
 
-                                if(BAC_RESULT != NO_RESULT){
+                                if(BAC_RESULT != NO_RESULT && FLAG_START_LAST_UPLOAD == false){
+                                    FLAG_START_LAST_UPLOAD = true;
                                     uploadDati();
                                 }
                             } catch (JSONException e) {
@@ -753,7 +727,8 @@ public class MainActivity extends AppCompatActivity {
             setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
             //qua salvare il risultato dell'analisi del BAC
             BAC_RESULT = measuredBac;
-            if(UPLOAD_FINISH == true){
+            if(UPLOAD_FINISH == true && FLAG_START_LAST_UPLOAD == false){
+                FLAG_START_LAST_UPLOAD = true;
                 uploadDati();
             }
         }
@@ -862,6 +837,8 @@ public class MainActivity extends AppCompatActivity {
                             JSONObject jsonObject = new JSONObject(response);
                             String Response = jsonObject.getString("response");
                             Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+                            System.out.println("ecco la risposta");
+                            System.out.println(Response);
 
                         } catch (JSONException e) {
                             e.printStackTrace();

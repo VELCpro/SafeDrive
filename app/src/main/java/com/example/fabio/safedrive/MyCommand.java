@@ -41,7 +41,7 @@ public class MyCommand<T> {
             ));
             MySingleton.getInstance(context).addToRequestQueue(request);
             Toast.makeText(this.context,"foto"+i,Toast.LENGTH_SHORT).show();
-            System.out.println("foto"+i);
+            System.out.println("foto"+i); // nel secondo caso invia la richiesta anche se non è una foto ma le 3 foto codice qr e bac result
             i++;
 
         }
