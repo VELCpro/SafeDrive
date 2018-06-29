@@ -115,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
     //Per upload immagine
     private String uploadUrl = "http://safedrive.altervista.org/updateinfo.php"; // indirizzo web di updateinfo
+    private String uploadUrlForResult = "http://safedrive.altervista.org/"; // indirizzo web di updateinfo
     private Bitmap bitmap;
     private ArrayList<String> imageList = new ArrayList<>();
     private HashMap<String,String> imageMap = new HashMap<>();
@@ -853,7 +854,7 @@ public class MainActivity extends AppCompatActivity {
     public void uploadDati(){
         final MyCommand myCommand = new MyCommand(getApplicationContext());
 
-        final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
+        final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrlForResult,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
