@@ -7,11 +7,13 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
+import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -66,6 +68,7 @@ import BACtrackAPI.Exceptions.BluetoothNotEnabledException;
 public class MainActivity extends AppCompatActivity {
 
     public static boolean FIRST_TIME_OPEN = true;
+    Handler handler;
     // Variabili Camera
     Camera camera;
     FrameLayout frameLayout;
@@ -123,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         this.statusMessageTextView = (TextView)this.findViewById(R.id.status_message_text_view_id);
         textView = (TextView) findViewById(R.id.textView);
+        handler = new Handler(getApplicationContext().getMainLooper());
 
         createBACTrackProcess();
         connectNearest();
@@ -286,6 +290,7 @@ public class MainActivity extends AppCompatActivity {
             File outputFile = new File(folder_gui,imageFileName + formato);
             imageList.add(outputFile.getPath());
             imageMap.put(outputFile.getPath(), imageFileName);
+
             return outputFile;
         }
     } // salvo nella imageMap<String,String> (imagePath, imageFileName)
@@ -424,7 +429,12 @@ public class MainActivity extends AppCompatActivity {
 
                                 if(BAC_RESULT != NO_RESULT && FLAG_START_LAST_UPLOAD == false){
                                     FLAG_START_LAST_UPLOAD = true;
-                                    uploadDati();
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            uploadDati();
+                                        }
+                                    });
                                 }
                             } catch (JSONException e) {
                                 e.printStackTrace();
@@ -461,6 +471,17 @@ public class MainActivity extends AppCompatActivity {
     private String imageToString(Bitmap bitmap){
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream); // forse posso evitarlo dato che ho gia il JPEG
+        /**ExifInterface newExif = null;
+        try {
+            newExif = new ExifInterface(String.valueOf(bitmap));
+            newExif.setAttribute(ExifInterface.TAG_ORIENTATION, String.valueOf(ExifInterface.ORIENTATION_ROTATE_90));
+
+            newExif.saveAttributes();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }**/
+
+
         byte[] imgBytes = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(imgBytes,Base64.DEFAULT);
     }
@@ -729,7 +750,13 @@ public class MainActivity extends AppCompatActivity {
             BAC_RESULT = measuredBac;
             if(UPLOAD_FINISH == true && FLAG_START_LAST_UPLOAD == false){
                 FLAG_START_LAST_UPLOAD = true;
-                uploadDati();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        uploadDati();
+                    }
+                });
+
             }
         }
 
@@ -834,6 +861,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         try {
+                            System.out.println("ecco la risposta");
+                            System.out.println(response);
+                            Log.v("JSON",response);
                             JSONObject jsonObject = new JSONObject(response);
                             String Response = jsonObject.getString("response");
                             Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
@@ -855,10 +885,20 @@ public class MainActivity extends AppCompatActivity {
             protected Map<String, String> getParams() throws AuthFailureError {
                 String formato = ".jpg"; // vedere se serve o no
                 Map<String,String> params = new HashMap<String,String>();
+                //cerco errori
+                System.out.println("BACResult : "+ BAC_RESULT);
+                System.out.println("QRCode : "+ QR_CODE_CONTENT);
+
                 params.put("QRCode",QR_CODE_CONTENT);
-                params.put("foto1",imageMap.get(0) + formato);
-                params.put("foto2",imageMap.get(1) + formato);
-                params.put("foto3",imageMap.get(2) + formato);
+                int i = 1;
+                for(String imagePath : imageMap.keySet()){
+                    params.put("foto"+i,imageMap.get(imagePath) + formato);
+                    System.out.println("foto"+i+" : "+ imageMap.get(imagePath) + formato);
+                    i++;
+                }
+
+               // params.put("foto2",imageMap.get(1) + formato);
+               // params.put("foto3",imageMap.get(2) + formato);
                 params.put("BACResult",Float.toString(BAC_RESULT));
 
                 return params;
