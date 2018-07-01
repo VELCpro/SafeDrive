@@ -45,7 +45,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:text="Button"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/textView"
@@ -54,29 +54,56 @@
         android:layout_height="150dp"
         android:layout_alignBottom="@+id/frameLayout"
         android:layout_centerHorizontal="true"
+
+
+        android:layout_centerVertical="false"
         android:layout_marginBottom="5dp"
-
-
         android:background="@drawable/box"
         android:clickable="false"
         android:cursorVisible="false"
         android:enabled="false"
         android:gravity="center_vertical"
+        android:paddingBottom="0dp"
         android:text="Scansiona il QRCode"
         android:textAlignment="center"
         android:textColor="@android:color/white"
         android:textSize="20dp"
-        android:typeface="sans" />
+        android:typeface="sans"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/textView2"
+        style="@android:style/Widget.TextView.PopupMenu"
+        android:layout_width="307dp"
+        android:layout_height="385dp"
+
+
+        android:layout_centerInParent="true"
+        android:background="@drawable/box"
+        android:clickable="false"
+        android:cursorVisible="false"
+        android:enabled="false"
+        android:gravity="bottom"
+        android:paddingBottom="20dp"
+        android:text="Scansiona il QRCode"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="20dp"
+        android:typeface="sans"
+        android:visibility="visible" />
 
     <TextView
         android:id="@+id/status_message_text_view_id"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
+        android:layout_width="314dp"
+        android:layout_height="195dp"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_gravity="center"
         android:gravity="center"
         android:text="Status: STATUS_MSG"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
 </RelativeLayout>

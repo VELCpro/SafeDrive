@@ -68,7 +68,11 @@ import BACtrackAPI.Exceptions.BluetoothNotEnabledException;
 public class MainActivity extends AppCompatActivity {
 
     public static boolean FIRST_TIME_OPEN = true;
-    Handler handler;
+    private Handler handler;
+    private Handler handler1;
+    private boolean flag = false;
+    private boolean itsTheFirstPhoto = true;
+
     // Variabili Camera
     Camera camera;
     FrameLayout frameLayout;
@@ -80,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
     CameraSource cameraSource;
     BarcodeDetector barcodeDetector;
     TextView textView;
+    TextView textView2;
 
     // Costanti
     public static final int CAMERA_FACING_BACK = 0;
@@ -97,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
     Button buttonUploadTest;
 
     //Per BACTrack
-    private String QR_CODE_CONTENT;
+    private String QR_CODE_CONTENT = null;
     private static final int NO_RESULT = 10000;
     private float BAC_RESULT = NO_RESULT;
     private boolean UPLOAD_FINISH = false;
@@ -126,89 +131,17 @@ public class MainActivity extends AppCompatActivity {
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         this.statusMessageTextView = (TextView)this.findViewById(R.id.status_message_text_view_id);
         textView = (TextView) findViewById(R.id.textView);
+        textView2 = (TextView) findViewById(R.id.textView2);
+
         handler = new Handler(getApplicationContext().getMainLooper());
+        handler1 = new Handler(getApplicationContext().getMainLooper());
 
         createBACTrackProcess();
         connectNearest();
-
-
-        /** try the button Upload
-        buttonUploadTest = (Button) findViewById(R.id.buttonUploadTest);
+        startQRScan();
 
 
 
-        buttonUploadTest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                bitmap = getImageFromGalleries(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "snap1.jpg")));
-                uploadImage(bitmap);
-            }
-        });**/
-
-
-
-        barcodeDetector = new BarcodeDetector.Builder(this)
-                .setBarcodeFormats(Barcode.QR_CODE).build();
-
-        cameraSource = new CameraSource.Builder(this, barcodeDetector)
-                .setRequestedPreviewSize(HD_720p[0], HD_720p[1]).setAutoFocusEnabled(true)
-                .setFacing(CAMERA_FACING_FRONT).setRequestedFps(15).build();
-
-
-        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                try {
-                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                            return;
-                    }
-                    cameraSource.start(holder);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                cameraSource.release();
-            }
-        });
-
-        barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
-            @Override
-            public void release() {
-
-            }
-
-            @Override
-            public void receiveDetections(Detector.Detections<Barcode> detections) {
-                SparseArray<Barcode> qrCodes = detections.getDetectedItems();
-                if(qrCodes.size() != 0){
-                    System.out.println(qrCodes);
-                    System.out.println(qrCodes.valueAt(0).displayValue);
-                    QR_CODE_CONTENT = qrCodes.valueAt(0).displayValue;
-              //    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
-                    if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) { // cancellare poi l' IF
-                        cameraSource.takePicture(null,mPictureSourceCallback);
-                     //   startTimerCameraSource();
-                    //    uploadImages(imageList);
-                    }
-                }
-            }
-        });
-
-        //Open the camera
-
-      /*  camera = Camera.open(CAMERA_FACING_FRONT);
-        showCamera = new ShowCamera(this,camera);
-        frameLayout.addView(showCamera);
-      */
 
 
     }
@@ -229,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
 
                  // cameraSource.release(); // Chiudo la cameraSource
                     surfaceView.setVisibility(View.GONE); // Cosi distruggo la Surface e di consegienza po invoco camera.release() // non so se è meglio fare prima una cosa o l'altra.
-                    textView.setVisibility(View.GONE);
-
+                    //textView.setVisibility(View.GONE);
+                    textView2.setText("Mantieni il volto nel rettangolo");
 
                     startCamera();
                   //camera.startPreview();
@@ -289,8 +222,10 @@ public class MainActivity extends AppCompatActivity {
 
             File outputFile = new File(folder_gui,imageFileName + formato);
             imageList.add(outputFile.getPath());
-            imageMap.put(outputFile.getPath(), imageFileName);
-
+            if(itsTheFirstPhoto == false) {
+                imageMap.put(outputFile.getPath(), imageFileName);
+            }
+            itsTheFirstPhoto = false;
             return outputFile;
         }
     } // salvo nella imageMap<String,String> (imagePath, imageFileName)
@@ -331,23 +266,20 @@ public class MainActivity extends AppCompatActivity {
         camera = Camera.open(CAMERA_FACING_FRONT); // Apro la camera normale
         showCamera = new ShowCamera(getApplicationContext(),camera);
         frameLayout.addView(showCamera);
-        startTimer();
+        if(mAPI.isConnected() == true) {
+            startBlowProcess();
+            //textView2.setVisibility(View.VISIBLE);
+        }else{
 
+        }
 
-       //mAPI.bacTrackAPICallbacks.BACtrackCountdown(2);
-
-        startBlowProcess();
-        //faccio in modo che i due processi si aspettino
-      /**  while(BAC_RESULT == NO_RESULT || UPLOAD_FINISH == false){
-            System.out.println("Aspetto un risultato");
-        }**/
 
     }
 
     public void startTimer(){
 
-        final int numeroFotoDaScattare = 2;
-        final int countDownInterval = 3000;
+        final int numeroFotoDaScattare = 3;
+        final int countDownInterval = 1500;
         final int millisInFuture = (numeroFotoDaScattare+1) * countDownInterval;
 
         countDownTimer =
@@ -414,6 +346,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadImages(final HashMap<String,String> imageMap){
         final MyCommand myCommand = new MyCommand(getApplicationContext());
+        System.out.print("Nuovo upload contestuale delle immagini iniziato!!! ");
 
         for(final String imagePath : imageMap.keySet()){
             final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
@@ -464,6 +397,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
         myCommand.execute();
+        System.out.println("upload iniziato... Mycommand execute");
         Toast.makeText(MainActivity.this," Upload iniziato",Toast.LENGTH_SHORT).show();
 
     }
@@ -484,6 +418,87 @@ public class MainActivity extends AppCompatActivity {
 
         byte[] imgBytes = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(imgBytes,Base64.DEFAULT);
+    }
+
+    private void startQRScan(){
+
+        /** try the button Upload
+         buttonUploadTest = (Button) findViewById(R.id.buttonUploadTest);
+
+
+
+         buttonUploadTest.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+        bitmap = getImageFromGalleries(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "snap1.jpg")));
+        uploadImage(bitmap);
+        }
+        });**/
+
+
+
+        barcodeDetector = new BarcodeDetector.Builder(this)
+                .setBarcodeFormats(Barcode.QR_CODE).build();
+
+        cameraSource = new CameraSource.Builder(this, barcodeDetector)
+                .setRequestedPreviewSize(HD_720p[0], HD_720p[1]).setAutoFocusEnabled(true)
+                .setFacing(CAMERA_FACING_FRONT).setRequestedFps(15).build();
+
+
+        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                try {
+                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
+                    cameraSource.start(holder);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                cameraSource.release();
+            }
+        });
+
+        barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
+            @Override
+            public void release() {
+
+            }
+
+            @Override
+            public void receiveDetections(Detector.Detections<Barcode> detections) {
+                SparseArray<Barcode> qrCodes = detections.getDetectedItems();
+                if(qrCodes.size() != 0){
+                    System.out.println(qrCodes);
+                    System.out.println(qrCodes.valueAt(0).displayValue);
+                    QR_CODE_CONTENT = qrCodes.valueAt(0).displayValue;
+                    //    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
+                     if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) { // cancellare poi l' IF
+                          cameraSource.takePicture(null,mPictureSourceCallback);
+
+                    }
+                }
+            }
+        });
+
+        //Open the camera
+
+      /*  camera = Camera.open(CAMERA_FACING_FRONT);
+        showCamera = new ShowCamera(this,camera);
+        frameLayout.addView(showCamera);
+      */
+
     }
 
    /**
@@ -700,6 +715,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void BACtrackConnected(BACTrackDeviceType bacTrackDeviceType) {
             setStatus(R.string.TEXT_CONNECTED);
+            if(QR_CODE_CONTENT != null ){
+                startBlowProcess();
+               // textView2.setVisibility(View.VISIBLE);
+            }
         }
 
         @Override
@@ -731,11 +750,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void BACtrackStart() {
             setStatus(R.string.TEXT_BLOW_NOW);
-        }
+          }
 
         @Override
         public void BACtrackBlow() {
             setStatus(R.string.TEXT_KEEP_BLOWING);
+            if(flag == false) {
+                flag = true;
+                handler1.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        startTimer();
+                    }
+                });
+            }
+
         }
 
         @Override
@@ -745,7 +774,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void BACtrackResults(float measuredBac) {
-            setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
+           // setStatus(getString(R.string.TEXT_FINISHED) + " " + measuredBac);
             //qua salvare il risultato dell'analisi del BAC
             BAC_RESULT = measuredBac;
             if(UPLOAD_FINISH == true && FLAG_START_LAST_UPLOAD == false){
@@ -869,6 +898,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
                             System.out.println("ecco la risposta");
                             System.out.println(Response);
+                            setStatus(Response);
 
                         } catch (JSONException e) {
                             e.printStackTrace();
