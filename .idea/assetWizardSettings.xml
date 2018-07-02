@@ -23,7 +23,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="scalingPercent" value="99" />
+                                                <entry key="scalingPercent" value="67" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -47,6 +47,8 @@
                                     <map>
                                       <entry key="backgroundImage" value="C:\Users\Fabio\Desktop\UniversitaXPS\Anno 2 Sem 2\GISP\Progetto Etilometro\safedrive 2\SafeDLogoBackGroud.png" />
                                       <entry key="foregroundImage" value="C:\Users\Fabio\Desktop\UniversitaXPS\Anno 2 Sem 2\GISP\Progetto Etilometro\safedrive 2\SafeDLogoForeGroud.png" />
+                                      <entry key="legacyIconShape" value="NONE" />
+                                      <entry key="webIconShape" value="NONE" />
                                     </map>
                                   </option>
                                 </PersistentState>
