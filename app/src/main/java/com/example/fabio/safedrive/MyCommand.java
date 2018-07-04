@@ -12,7 +12,7 @@ import java.util.Timer;
 
 public class MyCommand<T> {
 
-    ArrayList<Request<T>> requestList = new ArrayList<>();
+    private ArrayList<Request<T>> requestList = new ArrayList<>();
 
     private Context context;
 
@@ -26,6 +26,10 @@ public class MyCommand<T> {
 
     public void remove(Request<T> request){
         requestList.remove(request);
+    }
+
+    public ArrayList<Request<T>> getRequestList() {
+        return requestList;
     }
 
     public void execute(){

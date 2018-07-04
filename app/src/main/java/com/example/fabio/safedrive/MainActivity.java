@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
@@ -38,6 +39,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
+import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
@@ -53,6 +55,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import BACtrackAPI.API.BACtrackAPI;
@@ -99,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap bitmap;
     private ArrayList<String> imageList = new ArrayList<>();
     private HashMap<String,String> imageMap = new HashMap<>();
+    private HashMap<String,String> imageMapWithQR = new HashMap<>();
     Button buttonUploadTest;
 
     //Per BACTrack
@@ -264,6 +268,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void startCamera(){
         camera = Camera.open(CAMERA_FACING_FRONT); // Apro la camera normale
+        List<String> list =  camera.getParameters().getSupportedFocusModes(); // S5 supporta solo fixed focus...it is a problem oltre ad essere strano
+
         showCamera = new ShowCamera(getApplicationContext(),camera);
         frameLayout.addView(showCamera);
         if(mAPI.isConnected() == true) {
@@ -295,7 +301,15 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         System.out.println(millisUntilFinished);
-                        camera.takePicture(null, null, mPictureCallback);
+                        camera.autoFocus(new Camera.AutoFocusCallback()
+                        {
+                            @Override
+                            public void onAutoFocus(boolean arg0,Camera arg1)
+                            {
+                                camera.takePicture(null, null, mPictureCallback);
+                            }
+                        });
+                       // camera.takePicture(null, null, mPictureCallback);
                         int i = ((millisInFuture-(int)millisUntilFinished)/(countDownInterval))+1;
                         System.out.println("Foto numero n° " + i +" scattata ");
                         Toast.makeText(MainActivity.this, "Foto numero n° " + i +" scattata ", Toast.LENGTH_SHORT).show();
@@ -303,6 +317,13 @@ public class MainActivity extends AppCompatActivity {
 
                 }.start();
     }
+
+  /**  Camera.AutoFocusCallback mAutoFocusCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+
+        }
+    };*/
 
     public void startTimerCameraSource(){
 
@@ -346,59 +367,74 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadImages(final HashMap<String,String> imageMap){
         final MyCommand myCommand = new MyCommand(getApplicationContext());
-        System.out.print("Nuovo upload contestuale delle immagini iniziato!!! ");
+        System.out.println("Nuovo upload contestuale delle immagini iniziato!!! ");
+        int count = 1;
+        for(final String imagePath : imageMap.keySet()) {
 
-        for(final String imagePath : imageMap.keySet()){
-            final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
-                    new Response.Listener<String>() {
-                        @Override
-                        public void onResponse(String response) {
-                            try {
-                                JSONObject jsonObject = new JSONObject(response);
-                                String Response = jsonObject.getString("response");
-                                Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
+            final Bitmap bitmap = getImageFromGalleries(Uri.fromFile(new File(imagePath)));
+            if (QR_CODE_CONTENT.equals(scanQRfromBitmap(bitmap))) {
+                final StringRequest stringRequest = new StringRequest(Request.Method.POST, uploadUrl,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String Response = jsonObject.getString("response");
+                                    Toast.makeText(MainActivity.this, Response, Toast.LENGTH_SHORT).show();
 
-                                UPLOAD_FINISH = true; // dico che è finito l'upload perchè ho ricevuto una risposta
+                                    UPLOAD_FINISH = true; // dico che è finito l'upload perchè ho ricevuto una risposta
 
-                                if(BAC_RESULT != NO_RESULT && FLAG_START_LAST_UPLOAD == false){
-                                    FLAG_START_LAST_UPLOAD = true;
-                                    handler.post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            uploadDati();
-                                        }
-                                    });
+                                    if (BAC_RESULT != NO_RESULT && FLAG_START_LAST_UPLOAD == false) {
+                                        FLAG_START_LAST_UPLOAD = true;
+                                        handler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                uploadDati();
+                                            }
+                                        });
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (JSONException e) {
-                                e.printStackTrace();
                             }
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
+                        }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
 
-                }
-            })
-            {
-                @Override
-                protected Map<String, String> getParams() throws AuthFailureError {
+                    }
+                }) {
+                    @Override
+                    protected Map<String, String> getParams() throws AuthFailureError {
+                        Map<String, String> params = new HashMap<String, String>();
+                        params.put("name", imageMap.get(imagePath)); //aggiungere poi nome dinamico
+                        params.put("image", imageToString(bitmap));
+                        return params;
 
-                    Map<String,String> params = new HashMap<String,String>();
-                    params.put("name",imageMap.get(imagePath)); //aggiungere poi nome dinamico
+                    }
+                };
 
-                    params.put("image",imageToString(getImageFromGalleries(Uri.fromFile(new File(imagePath)))));
-                    return params;
-                }
-            };
+                myCommand.add(stringRequest);
+                System.out.println("Foto n"+count+" aggiunta");
+                Toast.makeText(MainActivity.this, imagePath + " Aggiunta", Toast.LENGTH_SHORT).show();
+                //MySingleton.getmInstance(MainActivity.this).addToRequestQue(stringRequest);
+                imageMapWithQR.put(imagePath, imageMap.get(imagePath)); // copio in una mappa definitiva solo le fotogrofie dove è stato trovato un QRCode
 
-            myCommand.add(stringRequest);
-            Toast.makeText(MainActivity.this,imagePath +" Aggiunta",Toast.LENGTH_SHORT).show();
-            //MySingleton.getmInstance(MainActivity.this).addToRequestQue(stringRequest);
 
+            }else{
+                System.out.println("Foto n"+count+" non aggiunta");
+            }
+
+            count++; // aggiorno il contatore
         }
-        myCommand.execute();
-        System.out.println("upload iniziato... Mycommand execute");
-        Toast.makeText(MainActivity.this," Upload iniziato",Toast.LENGTH_SHORT).show();
+
+        if(myCommand.getRequestList().isEmpty()){
+            System.out.println("Nessun QRCode trovato nelle foto scattate. Per favore riprovare riavviando l..");
+            setStatus("Nessun QRCode trovato nelle foto scattate. Per favore riprovare tenendo ilQRCode più in vista..");
+        }else {
+            myCommand.execute();
+            System.out.println("upload iniziato... Mycommand execute");
+            Toast.makeText(MainActivity.this, " Upload iniziato", Toast.LENGTH_SHORT).show();
+        }
 
     }
 
@@ -421,22 +457,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startQRScan(){
-
-        /** try the button Upload
-         buttonUploadTest = (Button) findViewById(R.id.buttonUploadTest);
-
-
-
-         buttonUploadTest.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-        bitmap = getImageFromGalleries(Uri.fromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "snap1.jpg")));
-        uploadImage(bitmap);
-        }
-        });**/
-
-
 
         barcodeDetector = new BarcodeDetector.Builder(this)
                 .setBarcodeFormats(Barcode.QR_CODE).build();
@@ -501,9 +521,24 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void scanQRfromBitmap(){
+    public String scanQRfromBitmap(Bitmap bitmap){
+        String qr = "VUOTO";
+       // bitmap = RotateBitmap(bitmap,-90);
         BarcodeDetector barcodeDetector = new BarcodeDetector.Builder(getApplicationContext()).setBarcodeFormats(Barcode.QR_CODE).build();
+        Frame frame = new Frame.Builder().setBitmap(bitmap).build();
+        SparseArray<Barcode> barcodes = barcodeDetector.detect(frame);
+        if(barcodes.size()!=0) {
+            Barcode result = barcodes.valueAt(0);
+            qr = result.rawValue;
+        }
+        return qr;
+    }
 
+    public static Bitmap RotateBitmap(Bitmap source, float angle)
+    {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
    /**
@@ -901,8 +936,6 @@ public class MainActivity extends AppCompatActivity {
                             JSONObject jsonObject = new JSONObject(response);
                             String Response = jsonObject.getString("response");
                             Toast.makeText(MainActivity.this,Response,Toast.LENGTH_SHORT).show();
-                            System.out.println("ecco la risposta");
-                            System.out.println(Response);
                             setStatus(Response);
 
                         } catch (JSONException e) {
@@ -926,9 +959,9 @@ public class MainActivity extends AppCompatActivity {
 
                 params.put("QRCode",QR_CODE_CONTENT);
                 int i = 1;
-                for(String imagePath : imageMap.keySet()){
-                    params.put("foto"+i,imageMap.get(imagePath) + formato);
-                    System.out.println("foto"+i+" : "+ imageMap.get(imagePath) + formato);
+                for(String imagePath : imageMapWithQR.keySet()){
+                    params.put("foto"+i,imageMapWithQR.get(imagePath) + formato);
+                    System.out.println("foto"+i+" : "+ imageMapWithQR.get(imagePath) + formato);
                     i++;
                 }
 
