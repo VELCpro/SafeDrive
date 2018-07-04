@@ -501,6 +501,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void scanQRfromBitmap(){
+        BarcodeDetector barcodeDetector = new BarcodeDetector.Builder(getApplicationContext()).setBarcodeFormats(Barcode.QR_CODE).build();
+
+    }
+
    /**
     *
     *
