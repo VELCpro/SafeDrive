@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.hardware.Camera;
 import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
@@ -22,8 +23,10 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -139,6 +142,18 @@ public class MainActivity extends AppCompatActivity {
 
         handler = new Handler(getApplicationContext().getMainLooper());
         handler1 = new Handler(getApplicationContext().getMainLooper());
+
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        float fwidth = dm.density * dm.widthPixels;
+        float fheight = dm.density * dm.heightPixels;
+
+       // surfaceView.getHolder().setFixedSize((int)fwidth,(int)fheight);
+
+
 
         createBACTrackProcess();
         connectNearest();
@@ -462,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
                 .setBarcodeFormats(Barcode.QR_CODE).build();
 
         cameraSource = new CameraSource.Builder(this, barcodeDetector)
-                .setRequestedPreviewSize(HD_720p[0], HD_720p[1]).setAutoFocusEnabled(true)
+                .setRequestedPreviewSize(FULL_HD_1080p[0], FULL_HD_1080p[1]).setAutoFocusEnabled(true)
                 .setFacing(CAMERA_FACING_FRONT).setRequestedFps(15).build();
 
 

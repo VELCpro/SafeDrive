@@ -2,6 +2,7 @@ package com.example.fabio.safedrive;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -61,12 +62,14 @@ public class ShowCamera extends SurfaceView implements SurfaceHolder.Callback{
         camera.setDisplayOrientation(90); // voglio che il display sia verticale
         params.setRotation(270); // Foto con la FRONT_FACING_CAMERA non sottosopra
        // params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE); // il miglio modo per mettere a fuoco se supportato
+        List<Camera.Size> previews = params.getSupportedPreviewSizes();
 
         params.setJpegQuality(100); // Max JPEG Quality 100, Min 0
         params.setPictureSize(mSize.width,mSize.height); // metti la risoluzione piu grande sempre in width
         camera.setParameters(params);
         try {
-            camera.setPreviewDisplay(holder);
+
+            camera.setPreviewDisplay(holder); // 1440 X 2560 per 18:9 screen
         } catch (IOException e) {
             e.printStackTrace();
         }
