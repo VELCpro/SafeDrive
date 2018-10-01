@@ -519,10 +519,10 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println(qrCodes.valueAt(0).displayValue);
                     QR_CODE_CONTENT = qrCodes.valueAt(0).displayValue;
                     //    if (qrCodes.valueAt(0).displayValue.equals("ciao")) {
-                     if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) { // cancellare poi l' IF
+                     //if (qrCodes.valueAt(0).displayValue.equals("www.abbonationline.it/elle18")) { // cancellare poi l' IF
                           cameraSource.takePicture(null,mPictureSourceCallback);
 
-                    }
+                    //}
                 }
             }
         });
